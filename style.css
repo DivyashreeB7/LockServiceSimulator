@@ -596,4 +596,20 @@ button:disabled {
 .usecase-info .detail-row strong {
   overflow-wrap: anywhere;
 }
+
+/* Visitor counter: bottom centre */
+.visitor-counter {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 28px auto 18px;
+  text-align: center;
+}
+
+.visitor-counter img {
+  display: block;
+  transform: scale(1.3);
+  transform-origin: center;
+}
 }
