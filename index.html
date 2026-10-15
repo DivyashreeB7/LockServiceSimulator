@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b1220">
+  <title>LockGuard | Distributed Lock Management</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">L</div>
+      <div>
+        <h1>LockGuard</h1>
+        <p>Distributed Lock Management</p>
+      </div>
+    </div>
+    <div class="top-status">
+      <span class="status-dot"></span>
+      <span id="clusterHealth">Cluster Healthy</span>
+      <span class="environment">SIMULATION</span>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <section class="welcome">
+      <div>
+        <p class="eyebrow">SYSTEM OVERVIEW</p>
+        <h2>Fault-Tolerant Lock Service</h2>
+        <p class="muted">Manage tenant locks, monitor cluster nodes and test failure recovery.</p>
+      </div>
+      <button id="recoverBtn" class="button secondary">Reset Cluster</button>
+    </section>
+
+    <section class="metrics">
+      <article class="metric">
+        <p>Cluster Status</p>
+        <h3 id="healthMetric">Healthy</h3>
+        <span>Simulated cluster health</span>
+      </article>
+      <article class="metric">
+        <p>Active Lock</p>
+        <h3 id="activeMetric">None</h3>
+        <span id="activeDetail">No resource is locked</span>
+      </article>
+      <article class="metric">
+        <p>Current Leader</p>
+        <h3 id="leaderMetric">Node 2</h3>
+        <span id="leaderDetail">AZ-2 · Initial leader</span>
+      </article>
+      <article class="metric">
+        <p>Fencing Token</p>
+        <h3 id="tokenMetric">0</h3>
+        <span>Latest issued token</span>
+      </article>
+    </section>
+
+    
+<section class="panel usecase-panel">
+  <div class="panel-heading">
+    <div>
+      <p class="eyebrow">REAL-WORLD APPLICATIONS</p>
+      <h2>Use Case Simulator</h2>
+      <p class="muted">Choose a scenario to load a sample shared resource.</p>
+    </div>
+    <span class="tag">Interactive Demo</span>
+  </div>
+
+  <label for="useCase">Select an application</label>
+  <select id="useCase">
+    <option value="file">Shared File Editing</option>
+    <option value="inventory">E-commerce Inventory</option>
+    <option value="job">Scheduled Cloud Job</option>
+    <option value="database">Shared Database Record</option>
+  </select>
+
+  <div class="usecase-info">
+    <h3 id="useCaseTitle">Shared File Editing</h3>
+    <p id="useCaseDescription">
+      Coordinate access when multiple users want to edit the same file.
+    </p>
+    <div class="detail-row">
+      <span>Sample resource</span>
+      <strong id="useCaseResource">project-report.docx</strong>
+    </div>
+    <button id="loadUseCaseBtn" class="button primary" type="button">
+      Load Resource
+    </button>
+  </div>
+</section>
+
+    <section class="layout-grid">
+      <article class="panel architecture">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">INFRASTRUCTURE</p>
+            <h2>Cluster Architecture</h2>
+          </div>
+          <span class="tag">3-node cluster</span>
+        </div>
+
+        <div class="gateway">Client Requests · API Gateway</div>
+        <div class="connector">↓</div>
+
+        <div class="nodes">
+          <div class="node" id="node1">
+            <div class="node-symbol">N1</div>
+            <h3>Node 1</h3>
+            <p>Availability Zone 1</p>
+            <span class="node-role">Follower</span>
+          </div>
+
+          <div class="node leader" id="node2">
+            <div class="node-symbol">N2</div>
+            <h3>Node 2</h3>
+            <p>Availability Zone 2</p>
+            <span class="node-role">Leader</span>
+          </div>
+
+          <div class="node" id="node3">
+            <div class="node-symbol">N3</div>
+            <h3>Node 3</h3>
+            <p>Availability Zone 3</p>
+            <span class="node-role">Follower</span>
+          </div>
+        </div>
+
+        <div class="replication">
+          <span class="replication-line"></span>
+          <span>Consensus / Replication Concept</span>
+          <span class="replication-line"></span>
+        </div>
+        
+        <label for="manualLeader">Choose Leader (simulation)</label>
+        <select id="manualLeader">
+        <option value="1">Node 1 · AZ-1</option>
+        <option value="2" selected>Node 2 · AZ-2</option>
+        <option value="3">Node 3 · AZ-3</option>
+        </select>
+        <button id="setLeaderBtn" class="button secondary" type="button">
+         Set Leader
+        </button>
+
+        <div class="architecture-footer">
+          <span><i class="legend green"></i> Leader</span>
+          <span><i class="legend grey"></i> Follower</span>
+          <span><i class="legend red"></i> Failed</span>
+        </div>
+
+        <button id="crashBtn" class="button danger">Simulate Leader Failure</button>
+        <p class="small muted">Failure and recovery are simulated in this browser.</p>
+      </article>
+
+      <article class="panel lock-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">ACCESS CONTROL</p>
+            <h2>Lock Console</h2>
+          </div>
+          <span class="tag">Multi-tenant</span>
+        </div>
+
+      <label for="tenant">Tenant</label>
+      <div class="tenant-controls">
+          <select id="tenant"></select>
+          <button id="addTenantBtn" class="button secondary" type="button">
+          + Add
+          </button>
+          <button id="renameTenantBtn" class="button secondary" type="button">
+           Rename
+        </button>
+        <button id="deleteTenantBtn" class="button secondary" type="button">
+         Delete
+        </button>
+      </div>
+
+
+        <label for="resource">Resource name</label>
+        <input id="resource" value="shared-resource" maxlength="80">
+
+        <div class="action-row">
+          <button id="acquireBtn" class="button primary">Acquire Lock</button>
+          <button id="releaseBtn" class="button secondary">Release Lock</button>
+        </div>
+
+        <div class="lock-state">
+          <span class="state-indicator"></span>
+          <div>
+            <strong id="lockStatus">Status: Lock is available.</strong>
+            <p id="activeDetailConsole">Waiting for a lock request</p>
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <span>Last fencing token</span>
+          <strong id="tokenStatus">Fencing token: None</strong>
+        </div>
+
+        <div class="detail-row">       
+          <label for="leaseDuration">Lease Duration</label>
+          <select id="leaseDuration">
+             <option value="10">10 seconds (default)</option>
+             <option value="30" selected>30 seconds (demo)</option>
+             <option value="60">60 seconds (extended)</option>
+          </select>
+
+        <div class="detail-row">
+          <span>Lease countdown</span>
+          <strong id="leaseStatus">No active lease</strong>
+        </div>
+
+        </div>
+
+        <p class="small muted">Lease duration is configurable. Default architecture TTL: 10 seconds.</p>
+      </article>
+    </section>
+
+    <section class="panel events-panel">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">OBSERVABILITY</p>
+          <h2>System Event Log</h2>
+          <p class="muted">Review lock requests, expirations and simulated failures.</p>
+        </div>
+        <button id="clearBtn" class="button secondary">Clear Events</button>
+      </div>
+      <ul id="log" class="event-list"></ul>
+    </section>
+
+    <footer>
+      <span>LockGuard · Distributed Systems Project</span>
+      <span>Educational simulation — not a production Raft implementation</span>
+    </footer>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
