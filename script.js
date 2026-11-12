@@ -6,7 +6,7 @@ const log = document.getElementById("log");
 const leaseDurationInput = document.getElementById("leaseDuration");
 const manualLeader = document.getElementById("manualLeader");
 
-const tenants = ["Tenant A", "Tenant B"];
+const tenants = ["Tenant A", "Tenant B" ,"Tenant C"];
 const locks = new Map();
 
 let fencingToken = 0;
@@ -34,6 +34,7 @@ function addLog(message) {
   item.textContent =
     new Date().toLocaleTimeString() + " — " + message;
   log.prepend(item);
+  sendLogToAWS(message);
 }
 
 function selectedResource() {
@@ -478,3 +479,191 @@ populateTenants();
 manualLeader.value = "2";
 updateLockStatus();
 addLog("LockGuard initialized. Three-node cluster simulation is ready.");
+
+
+// Added monitoring metrics. These are browser-generated demo values, not live server telemetry.
+(function initializeMonitoring() {
+  const $ = (id) => document.getElementById(id);
+  const history = { incoming: [], outgoing: [] };
+  const maxSamples = 24;
+  const apiStats = { total: 0, success: 0, failed: 0 };
+  let latest = {};
+
+  function setBar(id, value, max = 100) {
+    const el = $(id);
+    if (el) el.style.width = Math.max(0, Math.min(100, (value / max) * 100)) + "%";
+  }
+
+  function randomBetween(min, max) {
+    return Math.round(min + Math.random() * (max - min));
+  }
+
+  function recordApiCall(success = true) {
+    apiStats.total++;
+    if (success) apiStats.success++;
+    else apiStats.failed++;
+    renderApiStats();
+  }
+
+  function renderApiStats() {
+    $("apiCalls").textContent = apiStats.total.toLocaleString();
+    $("apiSuccess").textContent = apiStats.success.toLocaleString();
+    $("apiFailed").textContent = apiStats.failed.toLocaleString();
+    setBar("apiBar", apiStats.total ? (apiStats.success / apiStats.total) * 100 : 0);
+    $("errorRate").textContent = apiStats.total
+      ? ((apiStats.failed / apiStats.total) * 100).toFixed(1)
+      : "0.0";
+    setBar("errorBar", apiStats.total ? (apiStats.failed / apiStats.total) * 100 : 0);
+  }
+
+  function drawTrafficChart() {
+    const canvas = $("trafficChart");
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const width = Math.max(280, rect.width);
+    const height = 170;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, width, height);
+
+    const pad = { left: 8, right: 8, top: 12, bottom: 18 };
+    const chartW = width - pad.left - pad.right;
+    const chartH = height - pad.top - pad.bottom;
+    const maxVal = Math.max(20, ...history.incoming, ...history.outgoing) * 1.2;
+
+    ctx.font = "10px Segoe UI, Arial";
+    ctx.fillStyle = "#93a4bb";
+    ctx.strokeStyle = "#28374d";
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 3; i++) {
+      const y = pad.top + (chartH * i / 3);
+      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(width - pad.right, y); ctx.stroke();
+    }
+
+    function drawLine(values, color) {
+      if (!values.length) return;
+      ctx.beginPath();
+      values.forEach((value, i) => {
+        const x = pad.left + (values.length === 1 ? chartW : (i / (values.length - 1)) * chartW);
+        const y = pad.top + chartH - (value / maxVal) * chartH;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    drawLine(history.incoming, "#4f8cff");
+    drawLine(history.outgoing, "#35c98a");
+  }
+
+  function updateServices() {
+    const failed = typeof failedNode !== "undefined" && failedNode !== null;
+    const nodeCount = failed ? 2 : 3;
+    $("nodeHealth").textContent = nodeCount + " / 3 Healthy";
+    $("nodeHealthDot").className = "service-dot" + (failed ? " warning" : "");
+    $("apiHealth").textContent = "Operational";
+    $("apiHealthDot").className = "service-dot";
+    $("dbHealth").textContent = "Operational";
+    $("dbHealthDot").className = "service-dot";
+    $("lockHealth").textContent = failed ? "Recovering" : "Operational";
+    $("lockHealthDot").className = "service-dot" + (failed ? " warning" : "");
+  }
+
+  function updateMetrics() {
+    const traffic = randomBetween(35, 145);
+    const cpu = randomBetween(18, 78);
+    const memory = randomBetween(35, 82);
+    const queries = randomBetween(12, 95);
+    const connections = randomBetween(12, 68);
+    const response = randomBetween(35, 240);
+    const incoming = randomBetween(8, 75);
+    const outgoing = randomBetween(5, 55);
+
+    latest = { traffic, cpu, memory, queries, connections, response, incoming, outgoing };
+    $("trafficRate").textContent = traffic;
+    $("cpuUsage").textContent = cpu;
+    $("memoryUsage").textContent = memory;
+    $("dbQueries").textContent = queries;
+    $("dbConnections").textContent = connections;
+    $("responseTime").textContent = response;
+    $("networkIn").textContent = incoming + " Mbps";
+    $("networkOut").textContent = outgoing + " Mbps";
+
+    setBar("trafficBar", traffic, 160);
+    setBar("cpuBar", cpu);
+    setBar("memoryBar", memory);
+    setBar("dbBar", queries, 120);
+    setBar("connectionBar", connections);
+
+    // Higher response times fill more of the indicator; values remain illustrative.
+    setBar("responseBar", response, 300);
+
+    history.incoming.push(incoming);
+    history.outgoing.push(outgoing);
+    if (history.incoming.length > maxSamples) history.incoming.shift();
+    if (history.outgoing.length > maxSamples) history.outgoing.shift();
+
+    updateServices();
+    drawTrafficChart();
+  }
+
+  // Count interactions with the existing lock-service UI as simulated API activity.
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("button");
+    if (!button || button.disabled) return;
+    const monitoredIds = [
+      "addTenantBtn", "renameTenantBtn", "deleteTenantBtn", "acquireBtn",
+      "releaseBtn", "setLeaderBtn", "crashBtn", "recoverBtn", "clearBtn",
+      "loadUseCaseBtn"
+    ];
+    if (monitoredIds.includes(button.id)) {
+      recordApiCall(Math.random() > 0.035);
+    }
+  }, true);
+
+  // Record one baseline sample and then refresh the demo metrics every 2 seconds.
+  recordApiCall(true);
+  updateMetrics();
+  renderApiStats();
+  setInterval(updateMetrics, 2000);
+  window.addEventListener("resize", drawTrafficChart);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) drawTrafficChart();
+  });
+})();
+
+
+async function sendLogToAWS(message, type = "LOCK_EVENT") {
+  try {
+    const response = await fetch(
+      "/.netlify/functions/save-log",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: message,
+          type: type
+        })
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error("AWS error:", result);
+      return false;
+    }
+
+    console.log("LockGuard AWS log saved:", result);
+    return true;
+
+  } catch (error) {
+    console.error("AWS connection failed:", error);
+    return false;
+  }
+}
