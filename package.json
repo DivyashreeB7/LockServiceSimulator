@@ -1,4 +1,7 @@
 {
+  "name": "lockguard",
+  "version": "1.0.0",
+  "private": true,
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1166.0"
   }
