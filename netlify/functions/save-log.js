@@ -1,4 +1,3 @@
-
 const {
   S3Client,
   PutObjectCommand
@@ -56,20 +55,21 @@ exports.handler = async (event) => {
       })
     };
 
-  } catch (error) {
-    console.error("LockGuard S3 error:", {
-  name: error.name,
-  message: error.message,
-  code: error.Code || error.code,
-  statusCode: error.$metadata?.httpStatusCode
-});
+    } catch (error) {
+      console.error("LockGuard S3 error:", error);
 
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        success: false,
-        error: "S3 upload failed"
-      })
-    };
-  }
-};
+      return {
+        statusCode: 500,
+        body: JSON.stringify({
+          success: false,
+          error: "S3 upload failed",
+          details: {
+            name: error.name,
+            message: error.message,
+            code: error.Code || error.code,
+            statusCode: error.$metadata?.httpStatusCode
+          }
+        })
+      };
+    }
+  };
