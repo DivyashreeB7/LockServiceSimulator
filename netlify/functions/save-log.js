@@ -57,7 +57,12 @@ exports.handler = async (event) => {
     };
 
   } catch (error) {
-    console.error("LockGuard S3 error:", error);
+    console.error("LockGuard S3 error:", {
+  name: error.name,
+  message: error.message,
+  code: error.Code || error.code,
+  statusCode: error.$metadata?.httpStatusCode
+});
 
     return {
       statusCode: 500,
